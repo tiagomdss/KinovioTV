@@ -813,18 +813,19 @@ const handlePlayDefault = async (episodeIndex = 0) => {
 
     if (addonStreams && addonStreams.length > 0) {
       streamsList = addonStreams.map(s => {
-        const tu = s.title.toUpperCase();
+        const title = s.title || s.name || 'Fonte automática';
+        const tu = title.toUpperCase();
         let quality = '1080P';
         if (tu.includes('4K') || tu.includes('2160P')) quality = '4K';
         else if (tu.includes('720P')) quality = '720P';
         return {
-          name: s.name, title: s.title, quality,
+          name: s.name, title, quality,
           type: tu.includes('DV') || tu.includes('DOLBY') ? 'Dolby Vision' : tu.includes('HDR') ? 'HDR10' : 'SDR',
-          size: s.title.match(/(\d+(\.\d+)?\s*(GB|MB))/i)?.[0] || '1.8 GB',
-          url: s.url,
-          isKinovio: s.name.toLowerCase().includes('kinoviostream')
+          size: title.match(/(\d+(\.\d+)?\s*(GB|MB))/i)?.[0] || '',
+          url: s.url || s.externalUrl || '',
+          isKinovio: (s.name || '').toLowerCase().includes('kinoviostream')
         };
-      });
+      }).filter(stream => /^https?:\/\//i.test(stream.url));
 
       // Ordenar: KinovioStream primeiro no topo
       streamsList.sort((a, b) => {

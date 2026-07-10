@@ -1,11 +1,14 @@
 <template>
-  <div class="min-h-screen bg-cinema-deep relative animate-ios-slide-up">
+  <div class="min-h-screen bg-cinema-deep relative animate-ios-slide-up overflow-hidden">
     <!-- Backdrop -->
-    <div class="absolute inset-0 z-0">
-      <div class="absolute inset-0 bg-gradient-to-tr from-accent/5 via-cinema-deep to-brand/5 pointer-events-none"></div>
+    <div class="absolute inset-x-0 top-0 z-0 h-[62svh] md:h-[70vh]">
+      <img v-if="show.backdrop || show.poster" :src="show.backdrop || show.poster" :alt="show.title" class="h-full w-full object-cover" />
+      <div class="absolute inset-0 bg-gradient-to-t from-cinema-deep via-cinema-deep/35 to-black/20"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-cinema-deep/80 via-transparent to-transparent"></div>
+      <div class="absolute inset-0 bg-gradient-to-tr from-accent/5 via-transparent to-brand/5 pointer-events-none"></div>
     </div>
 
-    <div class="relative z-10 p-5 sm:p-8 lg:p-14 flex flex-col gap-8">
+    <div class="relative z-10 p-5 pt-[38svh] sm:p-8 sm:pt-[42svh] lg:p-14 lg:pt-[46vh] flex flex-col gap-8">
       <!-- Back + Header -->
       <div class="flex items-center gap-4">
         <button 
@@ -17,7 +20,7 @@
         </button>
         <div>
           <span class="text-[10px] text-accent font-bold uppercase tracking-wider">KinovioTV</span>
-          <h2 class="text-xl sm:text-2xl lg:text-3xl font-black text-white uppercase tracking-tight">{{ show.title }}</h2>
+          <h2 class="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight text-balance">{{ show.title }}</h2>
         </div>
       </div>
 
@@ -26,15 +29,6 @@
         <!-- Left: Episodes + Description -->
         <div class="lg:col-span-2 flex flex-col gap-6">
           
-          <!-- Poster / Backdrop -->
-          <div v-if="show.backdrop" class="aspect-video w-full rounded-2xl overflow-hidden border border-glass-border shadow-hero relative">
-            <img :src="show.backdrop" :alt="show.title" class="w-full h-full object-cover" />
-            <div class="absolute inset-0 bg-gradient-to-t from-cinema-deep/80 to-transparent"></div>
-            <div class="absolute bottom-4 left-4 flex gap-2">
-              <span v-for="r in (show.ratings || [])" :key="r.label" class="badge" :class="r.color || 'badge-imdb'">{{ r.label }} {{ r.value }}</span>
-            </div>
-          </div>
-
           <!-- Episodes List -->
           <div v-if="show.episodes && show.episodes.length" class="flex flex-col gap-3.5">
             <!-- Header with Season Selector & Dubbed Mode Toggle -->
@@ -50,7 +44,7 @@
                     :class="!isDubbedMode ? 'bg-accent text-white shadow-sm' : 'text-text-secondary hover:text-white'"
                     @click="isDubbedMode = false"
                   >
-                    🌐 Formato Original
+                    <Layers3 :size="14" /> Formato Original
                   </button>
                   <button 
                     type="button"
@@ -58,7 +52,7 @@
                     :class="isDubbedMode ? 'bg-accent text-white shadow-sm' : 'text-text-secondary hover:text-white'"
                     @click="isDubbedMode = true"
                   >
-                    🎙️ Formato Novelas
+                    <ListOrdered :size="14" /> Contagem Corrida
                   </button>
                 </div>
                 <span class="text-[8px] text-text-muted font-bold block text-right max-w-[280px] leading-tight">
@@ -69,6 +63,10 @@
 
             <!-- Temporadas (Netflix style cards if posters exist, otherwise clean pill buttons) -->
             <div v-if="!isDubbedMode && seasonsList.length > 1" class="flex flex-col gap-3">
+              <label class="md:hidden text-[11px] font-bold text-text-secondary" for="season-select">Temporada</label>
+              <select id="season-select" class="focusable md:hidden min-h-12 rounded-xl border border-white/10 bg-cinema-elevated px-4 text-sm font-semibold text-white" :value="selectedSeason" @change="selectSeason(Number($event.target.value))">
+                <option v-for="season in seasonsList" :key="season.seasonNumber" :value="season.seasonNumber">{{ season.name }} · {{ season.episodeCount || 0 }} episódios</option>
+              </select>
               <!-- Case A: Season Posters are present -->
               <template v-if="showPosters">
                 <div class="flex items-center justify-between px-1">
@@ -76,7 +74,7 @@
                   <span class="text-[10px] text-text-muted font-semibold uppercase tracking-wider">Pôsteres</span>
                 </div>
                 <!-- Seasons Horizontal Cards List -->
-                <div class="flex items-center gap-4 overflow-x-auto no-scrollbar py-4 px-2.5 w-full max-w-full">
+                <div class="hidden md:flex items-center gap-4 overflow-x-auto no-scrollbar py-4 px-2.5 w-full max-w-full">
                   <button 
                     v-for="s in seasonsList" 
                     :key="s.seasonNumber"
@@ -98,7 +96,7 @@
                         loading="lazy"
                       />
                       <div v-else class="w-full h-full bg-gradient-to-tr from-cinema-deep via-[#0d0d18] to-[#16162a] flex flex-col items-center justify-center p-3 text-center">
-                        <span class="text-[18px] mb-1">🎬</span>
+                        <Clapperboard :size="20" class="mb-2 text-text-muted" />
                         <span class="text-[8px] font-black text-text-muted uppercase tracking-wider">{{ s.name }}</span>
                       </div>
                     </div>
@@ -114,7 +112,7 @@
 
               <!-- Case B: No Season Posters -> Render clean pill buttons -->
               <template v-else>
-                <div class="flex flex-wrap items-center gap-2 py-1 w-full max-w-full">
+                <div class="hidden md:flex flex-wrap items-center gap-2 py-1 w-full max-w-full">
                   <button 
                     v-for="sNum in seasons" 
                     :key="sNum"
@@ -153,13 +151,14 @@
                 <div 
                   v-for="(ep, idx) in displayedEpisodes" 
                   :key="ep.id"
-                  :id="`ep-card-${ep.id.replace(/:/g, '-')}`"
+                  :id="`ep-card-${String(ep.id).replace(/:/g, '-')}`"
                   class="carousel-item focusable w-64 sm:w-72 rounded-xl glass-card overflow-hidden cursor-pointer transition-smooth hover:border-accent/30 group relative"
                   :class="show.episodes[selectedEpisode]?.id === ep.id ? 'border-accent/40 shadow-sm shadow-accent/10' : ''"
                   @click="selectEpisode(ep)"
                 >
                   <div class="relative h-32 w-full overflow-hidden">
-                    <img :src="ep.thumbnail" :alt="ep.title" class="w-full h-full object-cover transition-all duration-500 group-hover:scale-105" loading="lazy" />
+                    <img v-if="ep.thumbnail || show.backdrop" :src="ep.thumbnail || show.backdrop" :alt="ep.title" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-[1.035]" loading="lazy" />
+                    <div v-else class="flex h-full w-full items-center justify-center bg-cinema-surface text-text-muted"><Clapperboard :size="28" /></div>
                     
                     <!-- Em breve / Soon Badge -->
                     <div v-if="ep.released === false" class="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none select-none z-10">
@@ -200,7 +199,7 @@
           </div>
 
           <!-- Description -->
-          <div class="glass-card p-5 rounded-2xl flex flex-col gap-3">
+          <div class="order-first glass-card p-5 sm:p-6 rounded-2xl flex flex-col gap-3">
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-bold text-accent uppercase tracking-wider">
                 {{ show.episodes ? `Episódio ${selectedEpisode + 1}` : 'Sinopse' }}
@@ -215,10 +214,10 @@
             <!-- TMDB Rich Metadata Badges (Country, Spoken Languages) -->
             <div class="flex flex-wrap gap-2 text-[10px] font-semibold text-text-secondary mt-1">
               <span v-if="show.country" class="px-2 py-0.5 rounded bg-glass border border-glass-border flex items-center gap-1">
-                📍 {{ show.country }}
+                <MapPin :size="13" /> {{ show.country }}
               </span>
               <span v-if="show.languages" class="px-2 py-0.5 rounded bg-glass border border-glass-border flex items-center gap-1">
-                🗣️ {{ show.languages }}
+                <Languages :size="13" /> {{ show.languages }}
               </span>
             </div>
 
@@ -226,7 +225,7 @@
             <div class="flex items-center gap-2.5 mt-2 mb-1">
               <button 
                 id="btn-detail-play"
-                class="focusable px-6 py-2.5 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-smooth shadow-md shadow-accent/15"
+                class="focusable min-h-12 px-6 bg-white hover:bg-white/90 text-black text-sm font-bold rounded-xl flex items-center gap-2 transition-smooth active:scale-[0.98] shadow-xl"
                 @click="$emit('play-default', selectedEpisode)"
               >
                 <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -261,8 +260,8 @@
 
           <!-- TMDB Watch Providers (Onde Assistir Oficialmente) -->
           <div v-if="show.watchProviders && show.watchProviders.length > 0" class="glass-card p-5 rounded-2xl flex flex-col gap-3">
-            <h4 class="text-xs font-black text-text-secondary uppercase tracking-widest flex items-center gap-1.5">
-              <span>📺</span>
+            <h4 class="text-xs font-black text-text-secondary uppercase tracking-widest flex items-center gap-2">
+              <Tv :size="16" />
               Onde Assistir Oficialmente
             </h4>
             <div class="flex flex-wrap gap-3.5">
@@ -317,7 +316,7 @@
             </div>
             
             <div v-if="!show.cast || show.cast.length === 0" class="text-center py-12 text-xs text-text-muted flex flex-col items-center gap-2">
-              <span class="text-2xl">👥</span>
+              <Users :size="28" />
               <p>Nenhum elenco disponível.</p>
             </div>
           </div>
@@ -329,6 +328,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
+import { Clapperboard, Languages, Layers3, ListOrdered, MapPin, Tv, Users } from 'lucide-vue-next';
 
 const props = defineProps({
   show: { type: Object, required: true },
