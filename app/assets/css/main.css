@@ -1,0 +1,338 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════
+   KinovioTV — Design System Tokens
+   Cinema-grade dark UI + Glassmorphism
+   ═══════════════════════════════════════════════ */
+
+:root {
+  --bg-deep: #08090B;
+  --bg-base: #0D0F13;
+  --bg-elevated: #111318;
+  --bg-surface: #1A1D23;
+  --accent: #7A4DFF;
+  --accent-hover: #916DFF;
+  --accent-glow: rgba(122, 77, 255, 0.24);
+  --brand: #D94CFF;
+  --brand-glow: rgba(217, 76, 255, 0.18);
+  --text-primary: #F6F6F8;
+  --text-secondary: #A5A8B2;
+  --text-muted: #737782;
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-hover: rgba(255, 255, 255, 0.10);
+  --blur: 20px;
+  --radius: 16px;
+  --easing: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration: 250ms;
+  --nav-height-mobile: 4.5rem;
+  --nav-width-desktop: 5rem;
+}
+
+/* ─── Base Reset ─── */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  user-select: none;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Glassmorphism Cards ─── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+}
+
+.glass-heavy {
+  background: rgba(10, 10, 15, 0.75);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-card {
+  background: rgba(18, 18, 26, 0.60);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius);
+  transition: all var(--duration) var(--easing);
+}
+
+.glass-card:hover {
+  background: rgba(26, 26, 37, 0.70);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
+/* ─── Smooth Transitions ─── */
+.transition-smooth {
+  transition: all var(--duration) var(--easing);
+}
+
+.transition-fast {
+  transition: all 150ms var(--easing);
+}
+
+/* ─── Scroll Snap Carousel ─── */
+.carousel-snap {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
+}
+
+.carousel-snap::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-snap {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.carousel-item {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* ─── Draggable Carousel State ─── */
+.carousel-snap.is-dragging {
+  scroll-snap-type: none;
+  cursor: grabbing;
+}
+
+.carousel-snap.is-dragging * {
+  pointer-events: none;
+}
+
+/* ─── Progress Bar Glow ─── */
+.progress-bar-glow {
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* ─── Skeleton Shimmer ─── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius);
+}
+
+/* ─── Ambient iOS Background Blobs ─── */
+.bg-ambient-blob { display: none; }
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite linear;
+  transform: translateX(-100%);
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ─── Hero Ken Burns ─── */
+.hero-image {
+  animation: ken-burns 20s ease-in-out infinite alternate;
+}
+
+@keyframes ken-burns {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.08) translate(-1%, -1%); }
+}
+
+/* ─── Glow Effects ─── */
+.glow-accent {
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.glow-brand {
+  box-shadow: 0 0 20px var(--brand-glow);
+}
+
+/* ─── Badge Styles ─── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.badge-imdb {
+  background: #F5C518;
+  color: #000;
+}
+
+.badge-hd {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.badge-4k {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+.badge-new {
+  background: rgba(225, 29, 72, 0.15);
+  color: #fb7185;
+  border: 1px solid rgba(225, 29, 72, 0.25);
+}
+
+.badge-anime {
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.25);
+}
+
+.badge-kdrama {
+  background: rgba(236, 72, 153, 0.15);
+  color: #f472b6;
+  border: 1px solid rgba(236, 72, 153, 0.25);
+}
+
+.badge-serie {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.badge-live {
+  background: #dc2626;
+  color: #fff;
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(220, 38, 38, 0.4); }
+  50% { box-shadow: 0 0 12px rgba(220, 38, 38, 0.7); }
+}
+
+/* ─── Top 10 Number Style ─── */
+.top-number {
+  font-size: 6rem;
+  font-weight: 900;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(255, 255, 255, 0.3);
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Rating Dots ─── */
+.dot-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transition: all var(--duration) var(--easing);
+}
+
+.dot-indicator.active {
+  width: 20px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+/* ─── Hide Scrollbars ─── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ─── Focus States for TV Navigation ─── */
+.focusable {
+  outline: none;
+}
+
+.focusable:focus-visible {
+  box-shadow: 0 0 0 3px rgba(8, 9, 11, 0.9), 0 0 0 5px var(--accent);
+}
+
+button, [role='button'], a { touch-action: manipulation; }
+
+@media (max-width: 767px) {
+  .carousel-snap {
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    scroll-padding-inline: 1rem;
+  }
+}
+
+.focusable.focused {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent), 0 0 20px var(--accent-glow);
+  transform: scale(1.04);
+  transition: all 200ms var(--easing);
+}
+
+/* ─── Safe Area Padding (Mobile) ─── */
+@supports (padding: max(0px)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* ─── Premium iOS Navigation Slide/Scale Animations ─── */
+@keyframes ios-slide-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes ios-scale-up {
+  from { transform: scale(0.94); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.animate-ios-slide-up {
+  animation: ios-slide-up 450ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-ios-scale-up {
+  animation: ios-scale-up 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Reduced Motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .hero-image {
+    animation: none;
+  }
+}

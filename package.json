@@ -1,0 +1,27 @@
+{
+  "name": "ktv",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-vue-next": "^0.395.0",
+    "mongoose": "^9.7.3",
+    "nuxt": "^3.12.2"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.12.1",
+    "@types/bcrypt": "^6.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.14.9",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.2"
+  }
+}

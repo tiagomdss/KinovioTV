@@ -1,0 +1,63 @@
+# Dependencies and Nuxt output
+node_modules/
+.nuxt/
+.output/
+.nitro/
+.cache/
+.data/
+dist/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Runtime data and logs
+server-data.json
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Local editor and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# AI tools, generated references and temporary work
+.agents/
+.cursor/
+.external/
+.claude/
+.qwen/
+.tmp*/
+_codex_tmp/
+design-system/
+Designer/
+
+# Local design references and media exports
+*.mov
+*.MOV
+*.mp4
+*.MP4
+*.psd
+*.fig
+
+# Android generated files (keep Android source code)
+android-tv/.gradle/
+android-tv/.gradle-home/
+android-tv/.idea/
+android-tv/local.properties
+android-tv/**/build/
+android-tv/captures/
+*.apk
+*.aab
+
+# Test and coverage output
+coverage/
+playwright-report/
+test-results/
