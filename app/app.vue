@@ -909,10 +909,12 @@ const handleSearch = async (query) => {
 };
 
 const handleFilterCategory = (categoryName) => {
+  const query = typeof categoryName === 'string' ? categoryName : categoryName?.label;
+  if (!query) return;
   currentTab.value = 'search';
   searchResults.value = [];
   searchedOnce.value = false;
-  handleSearch(categoryName);
+  handleSearch(query);
 };
 
 const handleConnectTrakt = async () => {
@@ -1223,6 +1225,7 @@ onMounted(async () => {
           <SearchScreen 
             v-else-if="currentTab === 'search'"
             :results="searchResults"
+            :suggestions="recommendedMedia"
             :loading="loadingMovies"
             :searched="searchedOnce"
             @search="handleSearch"
@@ -1250,10 +1253,11 @@ onMounted(async () => {
                 @click="openDetail(item)"
               />
             </div>
-            <div v-else class="flex flex-col items-center justify-center py-20 gap-3">
+            <div v-else class="flex flex-col items-center justify-center py-20 gap-3 text-center">
               <svg class="w-16 h-16 text-text-muted/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
-              <p class="text-sm text-text-muted">Sua lista está vazia</p>
-              <p class="text-[10px] text-text-muted">Clique no coração ao lado de "Assistir" em qualquer conteúdo para salvá-lo aqui.</p>
+              <p class="text-base font-bold text-white">Seu próximo favorito pode estar a poucos toques.</p>
+              <p class="max-w-xs text-xs leading-relaxed text-text-muted">Salve títulos nos detalhes para montar uma lista independente neste perfil.</p>
+              <button class="focusable mt-3 min-h-12 rounded-xl bg-accent px-5 text-sm font-bold text-white hover:bg-accent-hover" @click="handleNavigate('search')">Explorar títulos</button>
             </div>
           </div>
 

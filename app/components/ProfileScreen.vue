@@ -6,7 +6,7 @@
           <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-accent">Seu espaço</p>
           <h1 class="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">Perfil</h1>
         </div>
-        <button class="focusable flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-white hover:bg-white/[0.08]" @click="$emit('settings')">
+        <button class="focusable flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-white hover:bg-white/[0.08]" aria-label="Abrir configurações" @click="$emit('settings')">
           <Settings :size="17" />
           <span class="hidden sm:inline">Configurações</span>
         </button>
