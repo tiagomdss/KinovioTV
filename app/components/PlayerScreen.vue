@@ -236,6 +236,14 @@ const loadActiveSource = async () => {
         lowLatencyMode: false,
         backBufferLength: 90,
         maxBufferLength: 30,
+        manifestLoadPolicy: {
+          default: {
+            maxTimeToFirstByteMs: 8000,
+            maxLoadTimeMs: 15000,
+            timeoutRetry: null,
+            errorRetry: null,
+          },
+        },
       });
       hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
         if (loadId === sourceLoadId) video.play().catch(() => {});

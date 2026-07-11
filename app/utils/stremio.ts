@@ -213,7 +213,7 @@ export async function getStreamsFromAddons(type: 'movie' | 'series', id: string)
       return data.streams.map((stream: any) => ({
         name: `[${addon.name}] ${stream.name || 'Stream'}`,
         title: stream.title || 'Sem título adicional',
-        url: stream.url,
+        url: stream.url ? new URL(stream.url, baseUrl).toString() : undefined,
         infoHash: stream.infoHash,
         fileIdx: stream.fileIdx,
         externalUrl: stream.externalUrl,
@@ -269,4 +269,3 @@ export async function getSubtitlesFromAddons(type: 'movie' | 'series', id: strin
     return [];
   }
 }
-
