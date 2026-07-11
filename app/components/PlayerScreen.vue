@@ -45,7 +45,7 @@
       </div>
       <div class="flex gap-3">
         <button class="player-button" @click="$emit('exit')"><ArrowLeft :size="18" /> Voltar</button>
-        <button v-if="streams.length > 1" class="player-button player-button-primary" @click="showSourceMenu = true"><ListVideo :size="18" /> Ver fontes</button>
+        <button v-if="streams.length > 1" class="player-button player-button-primary" @click="openMenu('sources')"><ListVideo :size="18" /> Ver fontes</button>
       </div>
     </div>
 
@@ -59,7 +59,9 @@
         <CircleAlert :size="38" class="mx-auto text-amber-400" />
         <h2 class="mt-4 text-lg font-bold text-white">Não foi possível reproduzir esta fonte</h2>
         <p class="mt-2 text-sm leading-relaxed text-text-secondary">{{ playbackError }}</p>
-        <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+        <div class="mt-6 grid gap-2 sm:grid-cols-2">
+          <button class="player-button player-button-primary" @click="retryCurrentSource"><RefreshCw :size="18" /> Tentar novamente</button>
+          <button v-if="streams.length > 1" class="player-button" @click="openMenu('sources')"><ListVideo :size="18" /> Escolher fonte</button>
           <button class="player-button" @click="$emit('exit')"><ArrowLeft :size="18" /> Voltar aos detalhes</button>
           <button v-if="hasAlternativeSource" class="player-button player-button-primary" @click="tryNextSource"><RefreshCw :size="18" /> Tentar outra fonte</button>
         </div>
@@ -180,6 +182,7 @@ const activeMenu = ref(null);
 const selectedSubtitleId = ref(null);
 const attemptedUrls = ref(new Set());
 let controlsTimer;
+let sourceTimer;
 let lastEmitTime = 0;
 let hlsInstance = null;
 let sourceLoadId = 0;
@@ -198,6 +201,15 @@ const destroyHls = () => {
   hlsInstance = null;
 };
 
+const clearSourceTimer = () => clearTimeout(sourceTimer);
+const startSourceTimer = () => {
+  clearSourceTimer();
+  sourceTimer = setTimeout(() => {
+    playbackError.value = 'Esta fonte demorou demais para responder. Você pode tentar novamente ou escolher outro servidor.';
+    onPlaybackError();
+  }, 35000);
+};
+
 const isHlsUrl = value => /\.m3u8(?:$|[?#])/i.test(value) || /\/hls\//i.test(value);
 
 const loadActiveSource = async () => {
@@ -207,6 +219,7 @@ const loadActiveSource = async () => {
   handlingFailure = false;
   destroyHls();
   if (!video || !url) return;
+  startSourceTimer();
 
   video.pause();
   video.removeAttribute('src');
@@ -253,13 +266,14 @@ const loadActiveSource = async () => {
 
 const onLoadStart = () => { isBuffering.value = true; playbackError.value = ''; };
 const onLoadedMetadata = event => { duration.value = event.target.duration || 0; };
-const onCanPlay = () => { isBuffering.value = false; };
-const onPlaying = () => { isPlaying.value = true; isBuffering.value = false; hasStarted.value = true; resetControlsTimer(); };
+const onCanPlay = () => { clearSourceTimer(); isBuffering.value = false; };
+const onPlaying = () => { clearSourceTimer(); isPlaying.value = true; isBuffering.value = false; hasStarted.value = true; resetControlsTimer(); };
 const onEnded = () => { isPlaying.value = false; showControls.value = true; };
 
 const onPlaybackError = () => {
   if (handlingFailure) return;
   handlingFailure = true;
+  clearSourceTimer();
   isPlaying.value = false;
   isBuffering.value = false;
   if (playableUrl.value) attemptedUrls.value.add(playableUrl.value);
@@ -275,6 +289,15 @@ const onPlaybackError = () => {
 const tryNextSource = () => {
   const next = playableStreams.value.find(source => !attemptedUrls.value.has(cleanUrl(source.url)));
   if (next) selectStream(next);
+};
+
+const retryCurrentSource = () => {
+  if (!activeStream.value) return;
+  attemptedUrls.value.delete(playableUrl.value);
+  handlingFailure = false;
+  playbackError.value = '';
+  isBuffering.value = true;
+  nextTick(loadActiveSource);
 };
 
 const selectStream = (source, notify = true) => {
@@ -342,7 +365,7 @@ const formatTime = value => {
 };
 
 onMounted(() => { playerRoot.value?.focus(); updateVolume(); resetControlsTimer(); nextTick(loadActiveSource); });
-onUnmounted(() => { clearTimeout(controlsTimer); sourceLoadId += 1; destroyHls(); });
+onUnmounted(() => { clearTimeout(controlsTimer); clearSourceTimer(); sourceLoadId += 1; destroyHls(); });
 </script>
 
 <style scoped>

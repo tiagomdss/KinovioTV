@@ -216,7 +216,8 @@ export async function getStreamsFromAddons(type: 'movie' | 'series', id: string)
         url: stream.url,
         infoHash: stream.infoHash,
         fileIdx: stream.fileIdx,
-        externalUrl: stream.externalUrl
+        externalUrl: stream.externalUrl,
+        behaviorHints: stream.behaviorHints
       }));
     } catch (e) {
       console.warn(`Falha ao consultar streams do addon ${addon.name}:`, e);
@@ -268,5 +269,4 @@ export async function getSubtitlesFromAddons(type: 'movie' | 'series', id: strin
     return [];
   }
 }
-
 

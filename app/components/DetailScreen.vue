@@ -323,6 +323,36 @@
         </div>
       </div>
     </div>
+
+    <div v-if="sourcePickerOpen" class="fixed inset-0 z-[120] flex items-end bg-black/70 backdrop-blur-sm" @click.self="$emit('close-source-picker')">
+      <section class="max-h-[78svh] w-full overflow-y-auto rounded-t-3xl border border-white/10 bg-cinema-elevated p-5 pb-8 shadow-2xl animate-ios-slide-up sm:mx-auto sm:mb-6 sm:max-w-xl sm:rounded-2xl">
+        <div class="mx-auto mb-5 h-1 w-10 rounded-full bg-white/20 sm:hidden"></div>
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Fontes disponíveis</p>
+            <h2 class="mt-1 text-xl font-black text-white">Onde deseja assistir?</h2>
+            <p class="mt-1 text-xs text-text-secondary">A disponibilidade depende dos addons conectados.</p>
+          </div>
+          <button class="focusable flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl text-white" aria-label="Fechar fontes" @click="$emit('close-source-picker')">×</button>
+        </div>
+
+        <div class="mt-5 grid gap-2">
+          <button
+            v-for="(source, index) in streams"
+            :key="source.url || index"
+            class="focusable flex min-h-[72px] items-center gap-3 rounded-xl border border-white/8 bg-white/[0.035] p-3 text-left transition-smooth hover:border-accent/40 hover:bg-white/[0.07]"
+            @click="$emit('play', source)"
+          >
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent"><Clapperboard :size="20" /></span>
+            <span class="min-w-0 flex-1">
+              <strong class="block truncate text-sm text-white">{{ cleanStreamName(source.name) || `Fonte ${index + 1}` }}</strong>
+              <small class="mt-1 block truncate text-[10px] text-text-secondary">{{ [source.quality, source.type, source.size].filter(Boolean).join(' · ') || 'Qualidade automática' }}</small>
+            </span>
+            <span class="rounded-lg border border-white/10 px-2 py-1 text-[9px] font-bold text-white/70">Assistir</span>
+          </button>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -335,10 +365,11 @@ const props = defineProps({
   streams: { type: Array, default: () => [] },
   isFavorite: { type: Boolean, default: false },
   seasonViewMode: { type: String, default: 'posters' },
-  subtitleLanguage: { type: String, default: 'pt-BR' }
+  subtitleLanguage: { type: String, default: 'pt-BR' },
+  sourcePickerOpen: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['back', 'play', 'play-default', 'favorite', 'change-season', 'toast']);
+const emit = defineEmits(['back', 'play', 'play-default', 'favorite', 'change-season', 'toast', 'close-source-picker']);
 
 const selectedEpisode = ref(0);
 const selectedFormat = ref('4K');
@@ -346,6 +377,7 @@ const selectedSource = ref(0);
 const selectedSeason = ref(1);
 const customEpisodeNum = ref('');
 const isDubbedMode = ref(false);
+const cleanStreamName = value => (value || '').replace(/^\[[^\]]+\]\s*/, '');
 
 const playCustomEpisode = () => {
   const epNum = parseInt(customEpisodeNum.value);
@@ -493,7 +525,9 @@ const selectEpisode = (ep) => {
         : `Este episódio ainda não estreou. Estreia em: ${formatted || 'Em breve'}.`,
       type: 'error'
     });
+    return;
   }
+  emit('play-default', { season: ep.season ?? selectedSeason.value, episode: ep.episode || ep.number || 1 });
 };
 
 const filteredStreams = computed(() => {

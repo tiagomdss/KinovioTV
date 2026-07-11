@@ -26,6 +26,31 @@
       </div>
     </section>
 
+    <!-- Playback behavior -->
+    <section class="glass-card p-5 sm:p-6 rounded-2xl flex flex-col gap-4">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Reprodução</p>
+        <h3 class="mt-1 text-sm font-bold text-white">Ao tocar em Assistir ou em um episódio</h3>
+        <p class="mt-1 text-[11px] leading-relaxed text-text-secondary">Escolha se o KinovioTV inicia a melhor fonte disponível ou mostra os servidores antes de reproduzir.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 rounded-xl border border-white/8 bg-black/20 p-1.5" role="radiogroup" aria-label="Modo de reprodução">
+        <button
+          class="focusable min-h-12 rounded-lg px-3 text-xs font-bold transition-smooth"
+          :class="playbackMode === 'automatic' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-text-secondary hover:bg-white/5 hover:text-white'"
+          role="radio"
+          :aria-checked="playbackMode === 'automatic'"
+          @click="$emit('update:playback-mode', 'automatic')"
+        >Automático</button>
+        <button
+          class="focusable min-h-12 rounded-lg px-3 text-xs font-bold transition-smooth"
+          :class="playbackMode === 'manual' ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-text-secondary hover:bg-white/5 hover:text-white'"
+          role="radio"
+          :aria-checked="playbackMode === 'manual'"
+          @click="$emit('update:playback-mode', 'manual')"
+        >Escolher fonte</button>
+      </div>
+    </section>
+
     <!-- Stremio Addons -->
     <section class="glass-card p-5 sm:p-6 rounded-2xl flex flex-col gap-4">
       <h3 class="text-sm font-bold text-white flex items-center gap-2">
@@ -433,6 +458,7 @@ defineProps({
   subtitlePassword: { type: String, default: '' },
   enableNsfw: { type: Boolean, default: false },
   seasonViewMode: { type: String, default: 'posters' },
+  playbackMode: { type: String, default: 'automatic' },
 });
 
 defineEmits([
@@ -441,7 +467,7 @@ defineEmits([
   'connect-server', 'disconnect-server',
   'set-debrid-provider', 'update:debridToken', 'update:tmdbApiKey', 'update:tvdbApiKey',
   'update:subtitleAuto', 'update:subtitleLanguage', 'update:subtitleUsername', 'update:subtitlePassword',
-  'update:season-view-mode',
+  'update:season-view-mode', 'update:playback-mode',
   'save-settings', 'add-iptv', 'remove-iptv', 'reset-tmdb-key',
   'connect-trakt', 'disconnect-trakt', 'toggle-nsfw'
 ]);

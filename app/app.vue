@@ -39,6 +39,7 @@ const checkSession = async () => {
         if (s.debridToken !== undefined) debridToken.value = s.debridToken;
         if (s.debridProvider !== undefined) debridProvider.value = s.debridProvider;
         if (s.tmdbApiKey !== undefined) tmdbApiKey.value = s.tmdbApiKey;
+        if (s.playbackMode !== undefined) playbackMode.value = s.playbackMode;
         if (s.stremioAddons) {
           localStorage.setItem('ktv_stremio_addons', JSON.stringify(s.stremioAddons));
         }
@@ -138,6 +139,8 @@ const debridToken = ref('');
 const tmdbApiKey = ref('');
 const enableNsfw = ref(false);
 const seasonViewMode = ref('posters');
+const playbackMode = ref('automatic');
+const showSourcePicker = ref(false);
 
 // ─── Parental Control PIN Lock ───
 const showPinModal = ref(false);
@@ -208,6 +211,12 @@ const handleUpdateSeasonViewMode = (mode) => {
     localStorage.setItem('ktv_season_view_mode', mode);
   }
   showToast(`Temporadas serão exibidas como: ${mode === 'posters' ? 'Pôsteres' : 'Botões'}`);
+};
+
+const handleUpdatePlaybackMode = (mode) => {
+  playbackMode.value = mode === 'manual' ? 'manual' : 'automatic';
+  if (typeof window !== 'undefined') localStorage.setItem('ktv_playback_mode', playbackMode.value);
+  showToast(playbackMode.value === 'automatic' ? 'Reprodução automática ativada' : 'Escolha manual de fontes ativada');
 };
 
 const traktConnected = ref(false);
@@ -301,6 +310,7 @@ const refreshSettings = () => {
     tmdbApiKey.value = localStorage.getItem('ktv_tmdb_api_key') || '';
     enableNsfw.value = localStorage.getItem('ktv_enable_nsfw') === 'true';
     seasonViewMode.value = localStorage.getItem('ktv_season_view_mode') || 'posters';
+    playbackMode.value = localStorage.getItem('ktv_playback_mode') || 'automatic';
     const savedIptv = localStorage.getItem('ktv_iptv_playlists');
     if (savedIptv) iptvPlaylists.value = JSON.parse(savedIptv);
   }
@@ -445,23 +455,33 @@ const loadStremioCatalogs = async () => {
         }));
       }
 
-      // 6. BL Series (Romance genre 10749 + Asian languages)
-      const blSeriesList = await getTMDBDiscover('with_genres=10749&with_original_language=th|ko|ja|tw|zh|id|vi&with_watch_providers=8|337|119|318|283&watch_region=BR&sort_by=popularity.desc', 'tv');
+      // 6. BL Series. O catálogo dedicado é mais preciso que inferir BL apenas por país + romance.
+      const kinovioAddon = addons.find(a => a.name.toLowerCase().includes('kinoviostream'));
+      const dedicatedBlList = kinovioAddon
+        ? await getCatalogFromAddon(kinovioAddon.manifestUrl, 'series', 'kinovio_bl_new').catch(() => [])
+        : [];
+      const blSeriesList = dedicatedBlList.length
+        ? dedicatedBlList
+        : await getTMDBDiscover('with_genres=10749&with_original_language=th|ko|ja|tw|zh|id|vi&with_watch_providers=8|337|119|318|283&watch_region=BR&sort_by=popularity.desc', 'tv');
       if (blSeriesList?.length > 0) {
-        blSeries.value = blSeriesList.slice(0, 20).map(m => ({
-          id: m.id,
+        blSeries.value = blSeriesList.slice(0, 20).map(m => {
+          const rawId = m.id || m.tmdb_id;
+          const tmdbId = typeof rawId === 'string' && rawId.startsWith('tmdb:') ? Number(rawId.split(':')[1]) : Number(rawId);
+          return {
+          id: Number.isFinite(tmdbId) ? tmdbId : rawId,
+          tmdbId: Number.isFinite(tmdbId) ? tmdbId : null,
           title: m.name || m.original_name,
           imdbId: '',
-          backdrop: m.backdrop_path ? `https://image.tmdb.org/t/p/w780${m.backdrop_path}` : '',
-          poster: m.poster_path ? `https://image.tmdb.org/t/p/w342${m.poster_path}` : '',
+          backdrop: m.background || (m.backdrop_path ? `https://image.tmdb.org/t/p/w780${m.backdrop_path}` : ''),
+          poster: m.poster || (m.poster_path ? `https://image.tmdb.org/t/p/w342${m.poster_path}` : ''),
           description: m.overview || 'Nenhuma sinopse disponível.',
-          year: m.first_air_date ? m.first_air_date.split('-')[0] : '',
-          genre: 'Série BL',
-          rating: m.vote_average ? m.vote_average.toFixed(1) : '8.0',
-          ratings: [{ label: `TMDB ${m.vote_average ? m.vote_average.toFixed(1) : '8.0'}`, color: 'badge-imdb' }],
+          year: m.releaseInfo || (m.first_air_date ? m.first_air_date.split('-')[0] : ''),
+          genre: 'BL · Gay Romance',
+          rating: m.imdbRating || (m.vote_average ? m.vote_average.toFixed(1) : '8.0'),
+          ratings: [{ label: `TMDB ${m.imdbRating || (m.vote_average ? m.vote_average.toFixed(1) : '8.0')}`, color: 'badge-imdb' }],
           episodes: null,
           type: 'series'
-        }));
+        }});
       }
     } else {
       loadingMovies.value = false;
@@ -814,7 +834,7 @@ const handlePlayDefault = async (episodeIndex = 0) => {
     if (addonStreams && addonStreams.length > 0) {
       streamsList = addonStreams.map(s => {
         const title = s.title || s.name || 'Fonte automática';
-        const tu = title.toUpperCase();
+        const tu = `${s.name || ''} ${title}`.toUpperCase();
         let quality = '1080P';
         if (tu.includes('4K') || tu.includes('2160P')) quality = '4K';
         else if (tu.includes('720P')) quality = '720P';
@@ -823,6 +843,7 @@ const handlePlayDefault = async (episodeIndex = 0) => {
           type: tu.includes('DV') || tu.includes('DOLBY') ? 'Dolby Vision' : tu.includes('HDR') ? 'HDR10' : 'SDR',
           size: title.match(/(\d+(\.\d+)?\s*(GB|MB))/i)?.[0] || '',
           url: s.url || s.externalUrl || '',
+          behaviorHints: s.behaviorHints || null,
           isKinovio: (s.name || '').toLowerCase().includes('kinoviostream')
         };
       }).filter(stream => /^https?:\/\//i.test(stream.url));
@@ -842,8 +863,13 @@ const handlePlayDefault = async (episodeIndex = 0) => {
       const kinovioSources = streamsList.filter(s => s.isKinovio);
       const bestStream = kinovioSources.find(s => s.quality === '4K') || kinovioSources.find(s => s.quality === '1080P') || kinovioSources[0] || streamsList[0];
       
-      showToast(`Iniciando reprodução...`);
-      playMedia(bestStream);
+      if (playbackMode.value === 'manual') {
+        showSourcePicker.value = true;
+        showToast(`${streamsList.length} fonte${streamsList.length === 1 ? '' : 's'} encontrada${streamsList.length === 1 ? '' : 's'}`);
+      } else {
+        showToast('Iniciando reprodução...');
+        playMedia(bestStream);
+      }
     } else {
       showToast('Nenhuma fonte encontrada nos addons instalados.', 'error');
     }
@@ -854,6 +880,7 @@ const handlePlayDefault = async (episodeIndex = 0) => {
 };
 
 const playMedia = (stream) => {
+  showSourcePicker.value = false;
   currentPlayingStream.value = stream;
   activeScreen.value = 'player';
 };
@@ -1018,12 +1045,14 @@ const handleSaveSettings = async () => {
   localStorage.setItem('ktv_debrid_token', debridToken.value);
   localStorage.setItem('ktv_debrid_provider', debridProvider.value);
   localStorage.setItem('ktv_tmdb_api_key', tmdbApiKey.value);
+  localStorage.setItem('ktv_playback_mode', playbackMode.value);
   showToast('Configurações salvas!');
   await syncData({
     settings: {
       debridToken: debridToken.value,
       debridProvider: debridProvider.value,
-      tmdbApiKey: tmdbApiKey.value
+      tmdbApiKey: tmdbApiKey.value,
+      playbackMode: playbackMode.value
     }
   });
 };
@@ -1046,6 +1075,7 @@ const handleAuthSuccess = (userData) => {
     if (s.debridToken !== undefined) debridToken.value = s.debridToken;
     if (s.debridProvider !== undefined) debridProvider.value = s.debridProvider;
     if (s.tmdbApiKey !== undefined) tmdbApiKey.value = s.tmdbApiKey;
+    if (s.playbackMode !== undefined) playbackMode.value = s.playbackMode;
     if (s.stremioAddons) {
       localStorage.setItem('ktv_stremio_addons', JSON.stringify(s.stremioAddons));
     }
@@ -1191,12 +1221,14 @@ onMounted(async () => {
           :streams="activeStreams"
           :is-favorite="favorites.some(item => item.imdbId === selectedShow.imdbId)"
           :season-view-mode="seasonViewMode"
+          :source-picker-open="showSourcePicker"
           @back="activeScreen = 'main'"
           @play="playMedia"
           @play-default="handlePlayDefault"
           @favorite="toggleFavorite"
           @change-season="translateEpisodesForSeason(selectedShow.tmdbId, $event)"
           @toast="showToast($event.message, $event.type)"
+          @close-source-picker="showSourcePicker = false"
         />
 
         <!-- ═══ MAIN SCREENS ═══ -->
@@ -1292,8 +1324,10 @@ onMounted(async () => {
             :trakt-connected="traktConnected"
             :enable-nsfw="enableNsfw"
             :season-view-mode="seasonViewMode"
+            :playback-mode="playbackMode"
             @toggle-nsfw="handleToggleNsfw"
             @update:season-view-mode="handleUpdateSeasonViewMode"
+            @update:playback-mode="handleUpdatePlaybackMode"
             @logout="handleLogout"
             @install-addon="handleInstallAddon"
             @uninstall-addon="handleUninstallAddon"

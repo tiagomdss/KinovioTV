@@ -18,6 +18,7 @@ export interface UserSettings {
   debridProvider: string;
   debridToken: string;
   tmdbApiKey: string;
+  playbackMode?: 'automatic' | 'manual';
 }
 
 export interface UserDoc {
@@ -90,7 +91,8 @@ export const db = {
         iptvPlaylists: null,
         debridProvider: 'realdebrid',
         debridToken: '',
-        tmdbApiKey: ''
+        tmdbApiKey: '',
+        playbackMode: 'automatic'
       },
       createdAt: new Date().toISOString()
     };
