@@ -11,8 +11,6 @@
     <video
       v-if="activeStream && playableUrl"
       ref="videoEl"
-      :key="playableUrl"
-      :src="playableUrl"
       autoplay
       playsinline
       preload="auto"
@@ -183,6 +181,9 @@ const selectedSubtitleId = ref(null);
 const attemptedUrls = ref(new Set());
 let controlsTimer;
 let lastEmitTime = 0;
+let hlsInstance = null;
+let sourceLoadId = 0;
+let handlingFailure = false;
 
 const cleanUrl = (value) => typeof value === 'string' ? value.split('|')[0].trim() : '';
 const playableStreams = computed(() => props.streams.filter(source => cleanUrl(source?.url)));
@@ -192,6 +193,64 @@ const hasAlternativeSource = computed(() => playableStreams.value.some(source =>
 
 watch(() => props.stream, source => { if (source) selectStream(source, false); });
 
+const destroyHls = () => {
+  hlsInstance?.destroy();
+  hlsInstance = null;
+};
+
+const isHlsUrl = value => /\.m3u8(?:$|[?#])/i.test(value) || /\/hls\//i.test(value);
+
+const loadActiveSource = async () => {
+  const video = videoEl.value;
+  const url = playableUrl.value;
+  const loadId = ++sourceLoadId;
+  handlingFailure = false;
+  destroyHls();
+  if (!video || !url) return;
+
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+
+  if (isHlsUrl(url) && !video.canPlayType('application/vnd.apple.mpegurl')) {
+    try {
+      const { default: Hls } = await import('hls.js');
+      if (loadId !== sourceLoadId || !videoEl.value) return;
+      if (!Hls.isSupported()) throw new Error('HLS is not supported in this browser');
+
+      hlsInstance = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        backBufferLength: 90,
+        maxBufferLength: 30,
+      });
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (loadId === sourceLoadId) video.play().catch(() => {});
+      });
+      hlsInstance.on(Hls.Events.ERROR, (_event, data) => {
+        if (!data.fatal || loadId !== sourceLoadId) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && data.response?.code === 0) {
+          playbackError.value = 'O servidor bloqueou a conexão deste navegador. Tente outra fonte ou use o aplicativo Android.';
+        }
+        onPlaybackError();
+      });
+      hlsInstance.loadSource(url);
+      hlsInstance.attachMedia(video);
+      return;
+    } catch (error) {
+      console.warn('Falha ao iniciar reprodução HLS:', error);
+      onPlaybackError();
+      return;
+    }
+  }
+
+  video.src = url;
+  video.load();
+  video.play().catch(error => {
+    if (error?.name !== 'NotAllowedError') onPlaybackError();
+  });
+};
+
 const onLoadStart = () => { isBuffering.value = true; playbackError.value = ''; };
 const onLoadedMetadata = event => { duration.value = event.target.duration || 0; };
 const onCanPlay = () => { isBuffering.value = false; };
@@ -199,6 +258,8 @@ const onPlaying = () => { isPlaying.value = true; isBuffering.value = false; has
 const onEnded = () => { isPlaying.value = false; showControls.value = true; };
 
 const onPlaybackError = () => {
+  if (handlingFailure) return;
+  handlingFailure = true;
   isPlaying.value = false;
   isBuffering.value = false;
   if (playableUrl.value) attemptedUrls.value.add(playableUrl.value);
@@ -207,7 +268,7 @@ const onPlaybackError = () => {
     selectStream(next);
     return;
   }
-  playbackError.value = 'A fonte recusou a conexão, expirou ou usa um formato que este navegador não consegue abrir.';
+  if (!playbackError.value) playbackError.value = 'A fonte recusou a conexão, expirou ou usa um formato que este navegador não consegue abrir.';
   showControls.value = true;
 };
 
@@ -222,7 +283,7 @@ const selectStream = (source, notify = true) => {
   isBuffering.value = true;
   activeMenu.value = null;
   if (notify) emit('change-stream', source);
-  nextTick(() => videoEl.value?.play().catch(() => {}));
+  nextTick(loadActiveSource);
 };
 
 const togglePlay = async () => {
@@ -280,8 +341,8 @@ const formatTime = value => {
   return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}` : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
 
-onMounted(() => { playerRoot.value?.focus(); updateVolume(); resetControlsTimer(); });
-onUnmounted(() => clearTimeout(controlsTimer));
+onMounted(() => { playerRoot.value?.focus(); updateVolume(); resetControlsTimer(); nextTick(loadActiveSource); });
+onUnmounted(() => { clearTimeout(controlsTimer); sourceLoadId += 1; destroyHls(); });
 </script>
 
 <style scoped>
